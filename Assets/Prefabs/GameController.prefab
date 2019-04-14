@@ -1,0 +1,61 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &6312485172358974048
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 6312485172358974054}
+  - component: {fileID: 6312485172358974055}
+  m_Layer: 0
+  m_Name: GameController
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &6312485172358974054
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6312485172358974048}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 3.7025466, y: 2.6322637, z: -0.15679789}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &6312485172358974055
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6312485172358974048}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c41ce24480753144c9556baf6bc06f23, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  enemyNormal: {fileID: 8043917483205897642, guid: a07cd23f0a7c2a34b879df5647a3efee,
+    type: 3}
+  enemyGuard: {fileID: 8509297040130374949, guid: dd829b11ab48a0c48a9f95f1d1746c48,
+    type: 3}
+  enemyWall: {fileID: 1513808135, guid: 06258940651bb8e4fb1ec0e7b772df22, type: 3}
+  player: {fileID: 0}
+  ufo: {fileID: 1771481733044618754, guid: c66e82a6ad93c854db980c7e6f8eaab5, type: 3}
+  line: {fileID: 3498166880522535264, guid: 41ef7de8fbc91884da7b496e7b996fce, type: 3}
+  lineConnection: {fileID: 3498166880522535264, guid: eda65c70a80fa8a47a6be23e5e91d153,
+    type: 3}
+  HideWallCount: 120
+  canvasMenu: {fileID: 0}
+  nextLevelButton: {fileID: 0}
+  listPath: []
+  star: {fileID: 4497970597899727398, guid: f4b4713604f87934abb3ce10ddaae1bd, type: 3}
+  levelCount: {fileID: 0}

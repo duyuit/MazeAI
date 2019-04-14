@@ -8,8 +8,15 @@ using UnityEngine.UI;
 public class GameController : MonoBehaviour
 {
     // Start is called before the first frame update
-    public GameObject enemy;
+    private GameObject currentEnemyNormal = null;
+    private GameObject currentEnemyGuard = null;
+    private GameObject currentEnemyWall = null;
+
+    public GameObject enemyNormal;
+    public GameObject enemyGuard;
+    public GameObject enemyWall;
     public GameObject player;
+    public GameObject playerAI;
     public GameObject ufo;
     public GameObject line = null;
     public GameObject lineConnection = null;
@@ -19,9 +26,11 @@ public class GameController : MonoBehaviour
     private static List<NodeConnection> listConnected = new List<NodeConnection>();
     public GameObject canvasMenu;
     public Button nextLevelButton;
-
+    private GameObject ufoInstance = null;
     public List<Vector2> listPath = new List<Vector2>();
-
+    public GameObject star;
+    public Text levelCount;
+    private List<GameObject> listStar = new List<GameObject>();
     public class Location
     {
         public float X;
@@ -62,22 +71,29 @@ public class GameController : MonoBehaviour
     }
     public void MenuButtonPress()
     {
-        canvasMenu.SetActive(!canvasMenu.active);
+        isPause = !isPause;
+      //  canvasMenu.SetActive(!canvasMenu.active);
     }
-    public void ShowMenu()
+    public  void ShowMenu(bool isShow)
     {
-        canvasMenu.SetActive(true);
+        canvasMenu.SetActive(isShow);
     }
     public void CloseMenu()
     {
         canvasMenu.SetActive(false);
     }
+    public void NextLevel()
+    {
+        int currentLevelCount = PlayerPrefs.GetInt("level");
+        currentLevelCount++;
+        PlayerPrefs.SetInt("level", currentLevelCount);
+        levelCount.text = currentLevelCount.ToString();
+        RestartLevel();
+        Application.LoadLevel(Application.loadedLevel);
+    }
     public void GenerateMaze()
     {
-        float newEnemyX = UnityEngine.Random.Range(5, 12) + 0.5f;
-        float newEnemyY = UnityEngine.Random.Range(5, 12) + 0.5f;
-        enemy.GetComponent<EnemyController>().ChangeLocationRange(newEnemyX, newEnemyY);
-        RestartLevel();
+    
         foreach (GameObject maze in listMaze)
         {
             Destroy(maze);
@@ -132,6 +148,8 @@ public class GameController : MonoBehaviour
             {
                 float x = point.x;
                 float y = point.y;
+                if (x == 1 && y == 1)
+                    continue;
                 float delta = 1 / 2f;
                 int randomDirection = UnityEngine.Random.Range(0, 4);           // 0 North,1 West ,2 South, 3 East
 
@@ -180,7 +198,54 @@ public class GameController : MonoBehaviour
             }
 
             player.GetComponent<PlayerController>().listConnected = listConnected;
+            playerAI.GetComponent<PlayerAIController>().listConnected = listConnected;
+            playerAI.GetComponent<PlayerAIController>().Go(FindWay(playerAI.transform.position, new Vector3(14.5f, 14.5f, 0)));
         }
+        GenerateStar();
+
+    }
+    private static void AddConnect(Vector3 position, Vector3 target)
+    {
+        NodeConnection nodeConnection = new NodeConnection(new Vector2(position.x, position.y), new Vector2(target.x,target.y));
+        listConnected.Add(nodeConnection);
+    }
+    public static void DeleteWall(Vector3 position, bool isVerti)
+    {
+        if(isVerti)
+        {
+            AddConnect(position + new Vector3(-0.5f,0,0), position + new Vector3(0.5f, 0, 0));
+        }
+        else
+        {
+            AddConnect(position + new Vector3(0, -0.5f, 0), position + new Vector3(0,0.5f, 0));
+        }
+    }
+    public static void CreateWall(Vector3 position, bool isVerti)
+    {
+        if(isVerti)
+        {
+            DeleteConnected(new NodeConnection(new Vector3(position.x - 0.5f,position.y,0), new Vector3(position.x + 0.5f, position.y, 0)));
+        }
+        else
+        {
+            DeleteConnected(new NodeConnection(new Vector3(position.x , position.y - 0.5f, 0), new Vector3(position.x, position.y + 0.5f, 0)));
+
+        }
+    }
+    void GenerateStar()
+    {
+        var listSortesPath = FindWay(new Vector3(0.5f, 0.5f, 0), new Vector3(14.5f, 14.5f, 0));
+        int deltaPos = listSortesPath.Count / 6;
+        listStar.Add(Instantiate(star, listSortesPath[deltaPos], Quaternion.identity));
+        listStar.Add(Instantiate(star, listSortesPath[deltaPos * 5], Quaternion.identity));
+
+        if (currentEnemyGuard != null)
+        {
+            currentEnemyGuard.GetComponent<EnemyGuardController>().GenerateLocation();
+            listStar.Add(Instantiate(star, currentEnemyGuard.GetComponent<EnemyGuardController>().locationRange, Quaternion.identity));
+        }
+        else
+            listStar.Add(Instantiate(star, listSortesPath[deltaPos * 3], Quaternion.identity));
     }
     public static List<Vector2> FindWay(Vector3 startPosition, Vector3 endPosition)
     {
@@ -256,15 +321,41 @@ public class GameController : MonoBehaviour
     }
     public void RestartLevel()
     {
+        //Reset position enemy
+        if(currentEnemyNormal != null)
+        {
+            currentEnemyNormal.transform.position = new Vector3(UnityEngine.Random.Range(0, 14) + 0.5f, UnityEngine.Random.Range(10, 14) + 0.5f, 0);
+        }
+        if (currentEnemyGuard != null)
+        {
+            currentEnemyGuard.GetComponent<EnemyGuardController>().ChangeLocationRange(UnityEngine.Random.Range(0, 14) + 0.5f, UnityEngine.Random.Range(5, 14) + 0.5f);
+        }
+        // Application.LoadLevel(Application.loadedLevel);
+        //Delete UFO and guide line
+        if (ufoInstance != null)
+        {
+            ufoInstance.GetComponent<UFOController>().ResetMaze();
+            Destroy(ufoInstance);
+            ufoInstance = null;
+        }
+
+        //Reset star location
+        foreach (var star in listStar)
+            Destroy(star);
+        listStar.Clear();
+
+        GenerateStar();
+
         isWin = false;
-        player.transform.position = new Vector3(0.5f, 0.5f, 0);
-        enemy.transform.position = enemy.GetComponent<EnemyController>().locationRange;
+        isFail = false;
+        player.GetComponent<PlayerController>().Restart();
         canvasMenu.SetActive(false);
     }
     public void CallUFO()
     {
         var newUFO = Instantiate(ufo, new Vector3(player.transform.position.x, player.transform.position.y, 0), Quaternion.identity);
         newUFO.GetComponent<UFOController>().Go(FindWay(PlayerController.roundingVector(player.transform.position), new Vector3(14.5f, 14.5f, 0)));
+        ufoInstance = newUFO;
     }
     public void StartGoingCalculate()
     {
@@ -396,7 +487,7 @@ public class GameController : MonoBehaviour
         }
         return false;
     }
-    void DeleteConnected(NodeConnection node)
+     static void DeleteConnected(NodeConnection node)
     {
         for(int i=0;i<listConnected.Count;i++)
         {
@@ -409,6 +500,40 @@ public class GameController : MonoBehaviour
     }
     void Start()
     {
+        //Save level
+        if (!PlayerPrefs.HasKey("level"))
+        {
+            PlayerPrefs.SetInt("level", 1);
+            levelCount.text = 1.ToString();
+            PlayerPrefs.Save();
+        }
+        else
+        {
+            int level =  PlayerPrefs.GetInt("level");
+            levelCount.text = level.ToString();
+            level = level % 5;
+            if(level == 1)
+            {
+
+            }else if(level == 2)
+            {
+                currentEnemyNormal = Instantiate(enemyNormal);
+            }else if(level == 3)
+            {
+                currentEnemyGuard = Instantiate(enemyGuard);
+            }
+            else if(level == 4)
+            {
+                currentEnemyWall = Instantiate(enemyWall);
+            }
+            else if(level == 5 )
+            {
+                currentEnemyNormal = Instantiate(enemyNormal);
+                currentEnemyWall = Instantiate(enemyWall);
+            }
+
+        }
+        //PlayerPrefs.DeleteAll();
         listMaze = new List<GameObject>();
         GenerateMaze();
     }
@@ -455,20 +580,30 @@ public class GameController : MonoBehaviour
         listMaze.Add(sample1);
     }
     // Update is called once per frame
-    private bool isWin = false;
+    public static bool isWin = false;
+    public static bool isFail = false;
+    public static bool isPause = false;
     void Update()
     {
-
-        nextLevelButton.interactable = isWin;
-        if(Vector3.Distance(player.transform.position,new Vector3(14.5f,14.5f,0)) < 0.01 && !isWin)
+        nextLevelButton.interactable = true ;
+        ShowMenu(isWin || isFail || isPause);
+        if (isWin || isFail || isPause)
+            Time.timeScale = 0;
+        else Time.timeScale = 1;
+        //foreach(var star in listStar)
+        //{
+        //    if (Vector3.Distance(star.transform.position, player.transform.position) < 0.1)
+        //        Destroy(star);
+        //}
+        for(int i=0;i<listStar.Count;i++)
         {
-            isWin = true;
-            canvasMenu.SetActive(true);
-        }
-        if(Vector3.Distance(player.transform.position, enemy.transform.position) < 0.01)
-        {
-            isWin = false;
-            ShowMenu();
+            GameObject star = listStar[i];
+            if (star != null)
+                if (Vector3.Distance(star.transform.position, player.transform.position) < 0.1)
+                {
+                    Destroy(star);
+                    star = null;
+                }
         }
     }
 }

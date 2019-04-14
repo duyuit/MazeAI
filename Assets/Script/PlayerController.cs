@@ -8,8 +8,7 @@ using static GameController;
 
 public class PlayerController : MonoBehaviour
 {
-    Animator animator;
-    public float speed = 0.02f;
+    public float speed = 5;
 
     public GameController gameController;
     public GameObject playerShadow;
@@ -19,6 +18,8 @@ public class PlayerController : MonoBehaviour
     private List<Vector3> listGoTo;
     public List<NodeConnection> listConnected = new List<NodeConnection>();
     int currentIndex = 0;
+    public Joystick horiJoyStick;
+    public Joystick vertiJoyStick;
     // Start is called before the first frame update
     void Start()
     {
@@ -32,17 +33,10 @@ public class PlayerController : MonoBehaviour
             listGoTo.Add(pos);
         }
     }
-    public void ResetMap(List<Vector2> listPath)
+    public void Restart()
     {
-        if (listGoTo != null)
-        {
-            listGoTo.Clear();
-            foreach (Vector2 pos in listPath)
-            {
-                listGoTo.Add(pos);
-            }
-            currentIndex = 0;
-        }
+        transform.position = new Vector3(0.5f, 0.5f, 0); 
+        nextPos = transform.position;
     }
     void Awake()
     {
@@ -67,35 +61,6 @@ public class PlayerController : MonoBehaviour
 
         deltaPos.x = (float)x;
         deltaPos.y = (float)y;
-
-        //if (deltaPos.x > 0)
-        //{
-        //    animator.SetFloat("X", 1);
-        //    animator.SetFloat("Y", 0);
-        //    animator.SetInteger("State", 1);
-        //}
-
-        //if (deltaPos.x < 0)
-        //{
-        //    animator.SetFloat("X", -1);
-        //    animator.SetFloat("Y", 0);
-        //    animator.SetInteger("State", 1);
-        //}
-
-        //if (deltaPos.y > 0)
-        //{
-        //    animator.SetFloat("X", 0);
-        //    animator.SetFloat("Y", 1);
-        //    animator.SetInteger("State", 1);
-        //}
-
-        //if (deltaPos.y < 0)
-        //{
-        //    animator.SetFloat("X", 0);
-        //    animator.SetFloat("Y", -1);
-        //    animator.SetInteger("State", 1);
-        //}
-
     }
     // Update is called once per frame
     bool isFloatEqual(float a, float b)
@@ -175,9 +140,14 @@ public class PlayerController : MonoBehaviour
     }
     void Update()
     {
+
+        if (Vector3.Distance(transform.position, new Vector3(14.5f, 14.5f, 0)) < 0.01)
+        {
+            isWin = true;
+            return;
+        }
         if (Vector3.Distance(roundingVector(transform.position), nextPos) == 0)
         {
-
             isWaiting = false;
             deltaOpacity = 0.15f;
         }
@@ -185,18 +155,19 @@ public class PlayerController : MonoBehaviour
         {
             //if (currentIndex < listGoTo.Count)
             //    SetGoTo(listGoTo[currentIndex]);
-            if (Input.GetKey(KeyCode.UpArrow))
+
+            if (Input.GetKey(KeyCode.UpArrow) || vertiJoyStick.Direction.y > 0)
             {
                 Vector3 temp = roundingVector(transform.position) + new Vector3(0, 1, 0);
                 NodeConnection node = new NodeConnection(roundingVector(transform.position), temp);
                 if (listConnected.FirstOrDefault(l => l.isEqual(node)) != null)
                 {
                     nextPos = temp;
-                    deltaPos = new Vector3(0,1, 0);
+                    deltaPos = new Vector3(0, 1, 0);
                     isWaiting = true;
                 }
             }
-            else if (Input.GetKey(KeyCode.DownArrow))
+            else if (Input.GetKey(KeyCode.DownArrow) || vertiJoyStick.Direction.y < 0)
             {
                 Vector3 temp = roundingVector(transform.position) + new Vector3(0, -1, 0);
                 NodeConnection node = new NodeConnection(roundingVector(transform.position), temp);
@@ -207,9 +178,9 @@ public class PlayerController : MonoBehaviour
                     isWaiting = true;
                 }
             }
-            else if (Input.GetKey(KeyCode.LeftArrow))
+            else if (Input.GetKey(KeyCode.LeftArrow) || horiJoyStick.Direction.x < 0)
             {
-                Vector3 temp = roundingVector(transform.position) + new Vector3 (-1, 0, 0);
+                Vector3 temp = roundingVector(transform.position) + new Vector3(-1, 0, 0);
                 NodeConnection node = new NodeConnection(roundingVector(transform.position), temp);
                 if (listConnected.FirstOrDefault(l => l.isEqual(node)) != null)
                 {
@@ -218,7 +189,7 @@ public class PlayerController : MonoBehaviour
                     isWaiting = true;
                 }
             }
-            else if (Input.GetKey(KeyCode.RightArrow))
+            else if (Input.GetKey(KeyCode.RightArrow) || horiJoyStick.Direction.x > 0)
             {
                 Vector3 temp = roundingVector(transform.position) + new Vector3(1, 0, 0);
                 NodeConnection node = new NodeConnection(roundingVector(transform.position), temp);
@@ -232,10 +203,10 @@ public class PlayerController : MonoBehaviour
             }
             else
             {
-               // animator.SetInteger("State", 0);
                 if (!isWaiting)
                     deltaPos = new Vector3(0, 0, 0);  
             }
+           
         }
         if (isWaiting)
         {
@@ -247,7 +218,5 @@ public class PlayerController : MonoBehaviour
             if(deltaOpacity < 0.6f)
             deltaOpacity += 0.02f;
         }
-       
-
     }
 }

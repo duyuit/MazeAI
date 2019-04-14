@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using static GameController;
 
-public class EnemyController : MonoBehaviour
+public class EnemyGuardController : MonoBehaviour
 {
     public float speed = 0.02f;
     // Start is called before the first frame update
@@ -20,14 +20,38 @@ public class EnemyController : MonoBehaviour
     public Sprite normalState;
     public Sprite crazyState;
     private List<GameObject> listCautionLine = new List<GameObject>();
+    private List<Vector2> listCanGo = new List<Vector2>();
     // Start is called before the first frame update
     void Start()
     {
+       
+
         player = GameObject.Find("Player");
+    
+    }
+    public void GenerateLocation()
+    {
+        float newEnemyX = UnityEngine.Random.Range(0, 12) + 0.5f;
+        float newEnemyY = UnityEngine.Random.Range(5, 12) + 0.5f;
+        transform.position = new Vector3(newEnemyX, newEnemyY, 0);
+
         nextPos = transform.position;
         deltaPos = new Vector3(0, 0, 0);
         locationRange = transform.position;
         DrawCautionLine();
+
+        for(float i = newEnemyX - 2 ;i <= newEnemyX + 2; i++)
+        {
+            for(float j = newEnemyY - 2; j <= newEnemyY + 2; j++)
+            {
+                var v = new Vector3(i, j, 0);
+                if (GameController.FindWay(transform.position, v).Count < 8)
+                {
+                    listCanGo.Add(v);
+                }
+
+            }
+        }
     }
     public void ChangeLocationRange(float x, float y)
     {
@@ -67,48 +91,49 @@ public class EnemyController : MonoBehaviour
     }
     // Update is called once per frame
     int deltaTimeChasePlayer = 0;
-    void SetRange(Vector2 location)
-    {
-        locationRange = location;
-    }
+
     void Update()
     {
-        transform.Rotate(Vector3.forward * 50 * Time.deltaTime, Space.Self);
+
+        if (Vector3.Distance(player.transform.position, transform.position) < 0.1)
+        {
+            GameController.isFail = true;
+            return;
+        }
         if (Vector3.Distance(PlayerController.roundingVector(transform.position), nextPos) < 0.01)
         {
             isWaiting = false;
         }
         //If too far from range, turn back
-        if (Vector3.Distance(locationRange, transform.position) > 7)
+        //if (Vector3.Distance(locationRange, transform.position) > 7)
+        //{
+        //    isChaseActive = false;
+        //    GetComponent<SpriteRenderer>().sprite = normalState;
+        //}
+       
+        if (Vector3.Distance(player.transform.position, locationRange) < 2*Math.Sqrt(2) )
         {
-            isChaseActive = false;
-            GetComponent<SpriteRenderer>().sprite = normalState;
+            GetComponent<SpriteRenderer>().sprite = crazyState;
+            isChaseActive = true;
+            deltaTimeChasePlayer++;
+
+            //Make enemy move smooth.
+            var vector = new Vector3((int)transform.position.x + 0.5f, (int)transform.position.y + 0.5f, 0);
+            //Smooth chance
+            if (deltaTimeChasePlayer > 30 && Vector3.Distance(vector, PlayerController.roundingVector(transform.position)) < 0.01)
+            {
+                deltaTimeChasePlayer = 0;
+                transform.position = vector;
+                var path = GameController.FindWay(vector, PlayerController.roundingVector(player.GetComponent<PlayerController>().nextPos));
+                Go(path);
+            }
         }
         else
         {
-            if (Vector3.Distance(player.transform.position, locationRange) < 2*Math.Sqrt(2) )
-            {
-                GetComponent<SpriteRenderer>().sprite = crazyState;
-                isChaseActive = true;
-                deltaTimeChasePlayer++;
-
-                //Make enemy move smooth.
-                var vector = new Vector3((int)transform.position.x + 0.5f, (int)transform.position.y + 0.5f, 0);
-                if (deltaTimeChasePlayer > 30 && Vector3.Distance(vector, PlayerController.roundingVector(transform.position)) < 0.01)
-                {
-                    deltaTimeChasePlayer = 0;
-                    transform.position = vector;
-                    var path = GameController.FindWay(vector, PlayerController.roundingVector(player.GetComponent<PlayerController>().nextPos));
-                    Go(path);
-                }
-            }
-            else
-            {
-                GetComponent<SpriteRenderer>().sprite = normalState;
-                isChaseActive = false;
-            }
+            GetComponent<SpriteRenderer>().sprite = normalState;
+            isChaseActive = false;
         }
-
+        
         //Player in range or too close enemy, chase him.
 
 
@@ -121,20 +146,21 @@ public class EnemyController : MonoBehaviour
                 var vector = new Vector3((int)transform.position.x + 0.5f, (int)transform.position.y + 0.5f, 0);
                 deltaTimeChasePlayer = 0;
                 transform.position = vector;
-                float x = locationRange.x + UnityEngine.Random.Range(-2, 3);
-                float y = locationRange.y + UnityEngine.Random.Range(-2, 3);
-                float row = GameController.row - 0.5f;
-                x = x > row ? row : x;
-                y = y > row ? row : y;
-                x = x < 0.5f ? 0.5f : x;
-                y = y < 0.5f ? 0.5f : y;
+                var v = listCanGo[UnityEngine.Random.Range(0, listCanGo.Count)];
+                //float x = locationRange.x + UnityEngine.Random.Range(-2, 3);
+                //float y = locationRange.y + UnityEngine.Random.Range(-2, 3);
+                //float row = GameController.row - 0.5f;
+                //x = x > row ? row : x;
+                //y = y > row ? row : y;
+                //x = x < 0.5f ? 0.5f : x;
+                //y = y < 0.5f ? 0.5f : y;
 
                 //If cannot find way, find another
-                var path = GameController.FindWay(vector, new Vector3(x, y, 0));
-                while(Vector3.Distance(path[path.Count - 1], locationRange) > 8)
-                {
-                    path = GameController.FindWay(vector, new Vector3(x, y, 0));
-                }
+                var path = GameController.FindWay(vector,v);
+                //while(Vector3.Distance(path[path.Count - 1], locationRange) > 8)
+                //{
+                //    path = GameController.FindWay(vector, new Vector3(x, y, 0));
+                //}
                 Go(path);
             }
         }
@@ -143,10 +169,15 @@ public class EnemyController : MonoBehaviour
             float step = speed * Time.deltaTime;
             transform.position = Vector3.MoveTowards(transform.position, nextPos, step);
         }
-        transform.Rotate(Vector3.forward * 400 * Time.deltaTime, Space.Self);
+        if (isChaseActive)
+            transform.Rotate(Vector3.forward * 400 * Time.deltaTime, Space.Self);
 
 
 
+    }
+    public void ResetMaze()
+    {
+     
     }
     public void Go(List<Vector2> listPath)
     {

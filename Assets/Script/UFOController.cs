@@ -47,19 +47,23 @@ public class UFOController : MonoBehaviour
         {
             if (currentIndex < listGoTo.Count)
                 SetGoTo(listGoTo[currentIndex]);
-            else
-            {
-                foreach (var line in listConnectDrawed)
-                    Destroy(line);
-                listConnectDrawed.Clear();
-                Destroy(gameObject);
-            }
+            //Destroy UFO
+            //else
+            //{
+            //    foreach (var line in listConnectDrawed)
+            //        Destroy(line);
+            //    listConnectDrawed.Clear();
+            //    Destroy(gameObject);
+            //}
         }
 
         if (isWaiting)
         {
-            DrawConnectionLine(transform.position, transform.position + deltaPos * speed);
-            transform.position = transform.position + deltaPos * speed;
+            Vector3 oldPosition = transform.position;
+         
+            float step = speed * Time.deltaTime;
+            transform.position = Vector3.MoveTowards(transform.position, nextPos, step);
+            DrawConnectionLine(oldPosition, transform.position);
         }
       
     }
@@ -83,5 +87,13 @@ public class UFOController : MonoBehaviour
         lineRenderer1.SetPosition(0, start);
         lineRenderer1.SetPosition(1, end);
         listConnectDrawed.Add(sample1);
+    }
+    public void ResetMaze()
+    {
+        foreach(var line in listConnectDrawed)
+        {
+            Destroy(line);
+        }
+        listConnectDrawed.Clear();
     }
 }
